@@ -118,7 +118,8 @@ def main(config, log_dir,dataset_path):
     prediction_length = config["prediction_length"]
 #    train_test_split = config["train_test_split"]
     total_length = context_length + prediction_length
-    #T=config.get("total_time_steps",1000)
+    T=config.get("total_time_steps",1000)
+    val_por=config.get("validation_por", 0.1)
     #T=1000
 
     # Create model
@@ -200,23 +201,34 @@ def main(config, log_dir,dataset_path):
     callbacks = []
     val_loader = None
     if config["use_validation_set"]:
-        #print(f"cardinality: {dataset.metadata}")
+        base_val_buffer = int(T * val_por)  # 1000 * 0.1 = 100 steps
+        
+        history_context_needed = config["context_length"] + max(model.lags_seq)
+        val_steps = base_val_buffer + history_context_needed
+        
+        logger.info(f"Trajectory uniform baseline size T: {T}")
+        logger.info(f"Slicing validation region tail boundary: {val_steps} total steps")
         
         train_val_splitter = OffsetSplitter(
-            offset=-config["prediction_length"] * num_rolling_evals # for traffic and electricity
-            #offset=-int(T * val_por) * num_rolling_evals
-            #offset=-config["prediction_length"] #for synthetic data and md
+            offset=-val_steps
         )
         train_data_post, val_gen = train_val_splitter.split(training_data)
         transformed_data = transformation.apply(train_data_post, is_train=True)
+        
+        num_val_windows = base_val_buffer // config["prediction_length"]
+        if num_val_windows <= 0:
+            num_val_windows = 1
+
+        logger.info(f"Generating {num_val_windows} validation window instances safely.")
 
         val_dataset = ConcatDataset(
             val_gen.generate_instances(
-                config["prediction_length"], num_rolling_evals
+                prediction_length=config["prediction_length"],
+                windows=num_val_windows  # Dynamic filling allocation
             )
         )
         val_splitter = create_splitter(
-            past_length=config["context_length"] + max(model.lags_seq),
+            past_length=history_context_needed,
             future_length=config["prediction_length"],
             mode="val",
         )
@@ -230,6 +242,7 @@ def main(config, log_dir,dataset_path):
 
         callbacks = []
         log_monitor = "valid_loss"
+
     else:
         transformed_data = transformation.apply(training_data, is_train=True)
         log_monitor = "train_loss"
