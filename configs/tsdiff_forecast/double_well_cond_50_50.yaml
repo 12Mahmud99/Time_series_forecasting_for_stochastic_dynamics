@@ -1,0 +1,18 @@
+ckpt: checkpoints_50_50_dummy/tsdiff_cond_with_early stopping/double_well/lightning_logs/version_0/checkpoints/last.ckpt
+model: conditional
+freq: H
+context_length: 50
+prediction_length: 50
+diffusion_config: diffusion_small_config
+use_features: False
+use_lags: False
+init_skip: False
+batch_size: 64
+normalization: none
+device: cuda:0
+setup: forecasting
+dataset: double_well
+num_samples: 1000
+eval_every: 50
+do_final_eval: true
+noise_observed: true

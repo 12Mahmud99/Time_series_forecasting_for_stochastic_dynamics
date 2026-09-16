@@ -1,0 +1,20 @@
+ckpt: checkpoints_50_50_dummy/tsdiff/alanine_psi/lightning_logs/version_0/checkpoints/last.ckpt
+model: unconditional
+freq: H
+context_length: 50
+prediction_length: 50
+diffusion_config: diffusion_small_config
+use_features: False
+use_lags: False
+init_skip: False
+batch_size: 64
+normalization: none
+device: cuda:0
+setup: forecasting
+dataset: alanine_psi
+num_samples: 1000
+sampler: ddpm
+sampler_params:
+  guidance: MSE
+  scale: 0.3
+eval_every: 50

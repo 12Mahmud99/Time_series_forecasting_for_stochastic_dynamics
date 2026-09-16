@@ -1,0 +1,3 @@
+Error -> solution
+
+RuntimeError: Boolean value of Tensor with more than one value is ambiguous -> export NO_AI_TRACKING=true (** can be set back to false)

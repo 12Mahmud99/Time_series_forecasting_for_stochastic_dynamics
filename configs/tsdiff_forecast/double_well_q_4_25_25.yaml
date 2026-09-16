@@ -1,0 +1,20 @@
+ckpt: checkpoints_25_25_dummy/tsdiff/double_well/lightning_logs/version_0/checkpoints/last.ckpt
+model: unconditional
+freq: H
+context_length: 25
+prediction_length: 25
+diffusion_config: diffusion_small_config
+use_features: False
+use_lags: False
+init_skip: False
+batch_size: 64
+normalization: none
+device: cuda:0
+setup: forecasting
+dataset: double_well
+num_samples: 1000
+sampler: ddpm
+sampler_params:
+  guidance: quantile
+  scale: 4
+eval_every: 50

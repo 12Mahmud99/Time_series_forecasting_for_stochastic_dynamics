@@ -1,0 +1,24 @@
+model: unconditional
+freq: H
+context_length: 100
+prediction_length: 100
+diffusion_config: diffusion_small_config
+use_features: False
+use_lags: False
+normalization: none 
+lr: 1.e-3
+init_skip: False
+gradient_clip_val: 0.5
+device: cuda:0
+setup: forecasting
+use_validation_set: True
+batch_size: 64
+num_batches_per_epoch: 128
+max_epochs: 1000
+dataset: alanine_psi
+num_samples: 1000
+sampler: ddpm
+sampler_params:
+  guidance: quantile
+  scale: 4 
+eval_every: 50

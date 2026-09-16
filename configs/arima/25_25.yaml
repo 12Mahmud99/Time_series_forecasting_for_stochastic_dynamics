@@ -1,0 +1,4 @@
+prediction_length: 25
+use_validation_set: true
+train_test_split: 900
+context_length: 25

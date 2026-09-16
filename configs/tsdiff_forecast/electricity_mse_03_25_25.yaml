@@ -1,0 +1,27 @@
+ckpt: checkpoints_25_25/tsdiff/electricity_nips/lightning_logs/version_0/best_checkpoint.ckpt
+model: unconditional
+diffusion_config: diffusion_small_config
+normalization: mean
+use_features: False
+use_lags: True
+dataset: electricity_nips
+freq: H
+context_length: 25
+prediction_length: 25
+lr: 1.e-3
+init_skip: False
+gradient_clip_val: 0.5
+max_epochs: 1000
+num_batches_per_epoch: 128
+batch_size: 2
+# Used only in callback,
+# the final evaluation uses 100 samples
+num_samples: 1000
+sampler: ddpm
+sampler_params:
+  guidance: MSE
+  scale: 0.3
+use_validation_set: True
+eval_every: 50
+device: cuda:0
+setup: forecasting
