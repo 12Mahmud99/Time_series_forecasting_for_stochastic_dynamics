@@ -52,7 +52,7 @@ def parse_args():
                         help='Rational-quadratic spline tail bound')
 
     # Training parameters
-    parser.add_argument("--encoder_type", type=str, default="gru")
+    parser.add_argument("--encoder_type", type=str, default="cnn")
     parser.add_argument('--epochs', type=int, default=1000,
                         help='Number of training epochs')
     parser.add_argument('--learning_rate', type=float, default=1e-3,
@@ -68,7 +68,7 @@ def parse_args():
     parser.add_argument('--normalization', type=str, default='none',
                     choices=['none', 'zscore', 'mean_abs'],
                     help='Normalization method: none, zscore (global), mean_abs (per‑series mean abs, like TSDiff)'),
-    parser.add_argument('--stride', type=int, default=1,
+    parser.add_argument('--stride', type=int, default=5,
                         help='Stride for segment extraction')
     parser.add_argument('--batch_size', type=int, default=4096,
                         help='Mini-batch size for training (0 = full batch)')
@@ -160,7 +160,7 @@ def load_data(data_path):
     return reshaped_data
 
 
-def extract_segments(tracks, n_past, n_future, stride=1):
+def extract_segments(tracks, n_past, n_future, stride=5):
     """
     Extract overlapping windows from trajectories.
     Returns tensor of shape (N_segments, n_past + n_future).
@@ -363,7 +363,8 @@ def train_model(model, segments, n_past, n_future, epochs, learning_rate,
 def save_results(model, loss_list, norm_stats, args, output_dir, val_loss_list=None,
                  landscape_name=None, extra_config=None):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    model_path = os.path.join(output_dir, f'{args.model_name}_{timestamp}.pth')
+    #model_path = os.path.join(output_dir, f'{args.model_name}_{timestamp}.pth')
+    model_path = os.path.join(output_dir, f'model.pth')
     torch.save(model.state_dict(), model_path)
     print(f"Saved model to: {model_path}")
 
@@ -387,7 +388,7 @@ def save_results(model, loss_list, norm_stats, args, output_dir, val_loss_list=N
     config['final_val_loss'] = val_loss_list[-1] if val_loss_list else None
     if extra_config:
         config.update(extra_config)
-    config_path = os.path.join(output_dir, f'config_{timestamp}.json')
+    #config_path = os.path.join(output_dir, f'config_{timestamp}.json')
     config_path = os.path.join(output_dir, f'config.json')
     with open(config_path, 'w') as f:
         json.dump(config, f, indent=2)
@@ -576,23 +577,33 @@ def main():
     except Exception as e:
         print(f"WARNING: Raw data visualization failed: {e}")
 
-    # Crete model
-    context_size = args.n_past
-    latent_size = args.n_future
     hidden_layers_list = tuple(int(x) for x in args.hidden_layers.split(','))
-    print(f"\nModel variant: {args.model_variant}")
-    if args.model_variant == "ar":
-        model = create_nfm(device, latent_size, context_size,
-                           K=args.flow_blocks, hidden_units=args.hidden_units,
-                           hidden_layers_list=hidden_layers_list,
-                           tail_bound=args.tail_bound)
-    elif args.model_variant == "ar_encoder_full":
-        model = preset_stage1(device, n_past=args.n_past, n_future=args.n_future, past_dim=1,encoder=args.encoder_type,
-                            K=args.flow_blocks, hidden_units=args.hidden_units, hidden_layers_list=hidden_layers_list,)
-    elif args.model_variant == "ar_encoder_light":
-        model = preset_stage2(device, n_past=args.n_past, n_future=args.n_future, past_dim=1, )
+    if args.n_past < 100:
+        model_type = "basic_nf (create_nfm)"
+        print(f"Past steps {args.n_past} < 100 -> using basic NF (create_nfm)")
+        model = create_nfm(
+            device, args.n_future, args.n_past,
+            K=args.flow_blocks,
+            hidden_units=args.hidden_units,
+            hidden_layers_list=hidden_layers_list,
+            tail_bound=args.tail_bound
+        )
     else:
-        raise ValueError(f"Unknown model_variant: {args.model_variant}")
+        args.model_variant = "ar_encoder_full"
+        args.flow_blocks=3
+        #args.flow_blocks=4
+        model_type = f"encoder_nf (preset_stage1 with {args.encoder_type})"
+        print(f"Past steps {args.n_past} >= 100 -> using encoder NF (preset_stage1 with {args.encoder_type})")
+        model = preset_stage1(
+            device,
+            n_past=args.n_past,
+            n_future=args.n_future,
+            past_dim=1,
+            encoder=args.encoder_type,
+            K=args.flow_blocks,
+            hidden_units=args.hidden_units,
+            hidden_layers_list=hidden_layers_list
+        )
 
     _train_start = time.time()
     epoch_list, loss_list, val_loss_list = train_model(
