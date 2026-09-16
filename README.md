@@ -239,7 +239,6 @@ checkpoints from Zenodo). Each script writes a `.npz` forecast file to
 `results/`.
 
 ### NFTSF
-python eval/NF/forecast_nf_encoder.py     --model_path ./checkpoints_100_100/nf_encoder_k4/alanine_psi/cnn/alanine_psi.pth     --config ./checkpoints_100_100/nf_encoder_k4/alanine_psi/cnn/config.json     --data_path data/alanine_psi_test.npz     --out results/nf_encoder/alanine_psi_cnn_k4_100_100.npz     --seed 123   --n_samples 1000 --batch_size 64 --device cuda
 
 ```bash
 python eval/NF/forecast_nf_encoder.py \
